@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: 'ResumAI - AI Powered Resume Builder',
   description: 'Create and revamp your resume with the power of AI. Build your future, faster.',
   icons: {
-    // icon: "/favicon.ico", // If you add a favicon later
+    // icon: "/favicon.ico", // Ensure favicon.ico exists in public folder or remove/comment out this line
   },
 };
 
