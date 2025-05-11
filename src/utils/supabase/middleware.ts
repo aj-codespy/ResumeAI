@@ -8,9 +8,19 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+    throw new Error('MIDDLEWARE/updateSession: Missing or invalid SUPABASE_URL. It must start with http:// or https://.')
+  }
+  if (!supabaseAnonKey) {
+    throw new Error('MIDDLEWARE/updateSession: Missing SUPABASE_ANON_KEY.')
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -58,3 +68,4 @@ export async function updateSession(request: NextRequest) {
 
   return response
 }
+

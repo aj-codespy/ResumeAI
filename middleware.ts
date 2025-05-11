@@ -1,12 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { updateSession } from '@/utils/supabase/middleware'
-import { createClient } from '@/utils/supabase/server' // For reading cookies server-side
+import { updateSession } from '@/utils/supabase/middleware' // updateSession is now in its own file and handles its own Supabase client
+import { createClient } from '@/utils/supabase/server' 
 
 export async function middleware(request: NextRequest) {
-  // Update user's session
+  // Update user's session using the dedicated updateSession function
   const response = await updateSession(request)
 
-  const supabase = createServerClient() // This uses the server client correctly
+  // For route protection, use the server client from '@/utils/supabase/server'
+  // This client already has built-in checks for env variables.
+  const supabase = createClient() 
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
