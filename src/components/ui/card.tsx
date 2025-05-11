@@ -9,7 +9,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200 ease-out hover:border-foreground/20", // Notion-like subtle border change on hover
       className
     )}
     {...props}
@@ -30,27 +30,30 @@ const CardHeader = React.forwardRef<
 CardHeader.displayName = "CardHeader"
 
 const CardTitle = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
+  HTMLDivElement, // Changed from HTMLParagraphElement to HTMLDivElement to allow h tags
+  React.HTMLAttributes<HTMLHeadingElement> // Used HTMLHeadingElement for semantic correctness
+>(({ className, children, ...props }, ref) => ( // Added children to props
+  // It's common to use <h2> or <h3> for card titles
+  <h3 // Changed from div to h3 for semantic meaning
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
+      "text-2xl font-semibold leading-none tracking-tight", // Kept Notion-like styling
       className
     )}
     {...props}
-  />
+  >
+    {children}
+  </h3>
 ))
 CardTitle.displayName = "CardTitle"
 
 const CardDescription = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  HTMLParagraphElement, // Correctly HTMLParagraphElement
+  React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <div
+  <p // Changed from div to p for semantic meaning
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn("text-sm text-muted-foreground", className)} // Kept Notion-like styling
     {...props}
   />
 ))

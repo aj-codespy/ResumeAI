@@ -121,7 +121,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                   <FormItem>
                     <FormLabel>Years of Experience</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 5" {...field} />
+                      <Input type="number" placeholder="e.g., 5" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} value={field.value === undefined ? '' : field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -160,7 +160,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
           </CardHeader>
           <CardContent className="space-y-4">
             {educationFields.map((item, index) => (
-              <div key={item.id} className="p-4 border rounded-md space-y-3 relative">
+              <div key={item.id} className="p-4 border rounded-md space-y-3 relative transition-all duration-300 ease-in-out hover:shadow-md hover:border-foreground/20">
                 <FormField
                   control={form.control}
                   name={`education.${index}.institution`}
@@ -214,7 +214,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
           </CardHeader>
           <CardContent className="space-y-4">
             {workExperienceFields.map((item, index) => (
-              <div key={item.id} className="p-4 border rounded-md space-y-3 relative">
+              <div key={item.id} className="p-4 border rounded-md space-y-3 relative transition-all duration-300 ease-in-out hover:shadow-md hover:border-foreground/20">
                 <FormField
                   control={form.control}
                   name={`workExperience.${index}.company`}

@@ -41,7 +41,7 @@ export default function ResumeEditor({
   };
 
   return (
-    <Card className="mt-8 shadow-lg">
+    <Card className="mt-8 shadow-lg"> {/* Existing shadow-lg, card hover will be additive/override based on specificity */}
       <CardHeader>
         <CardTitle className="text-2xl">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -57,7 +57,13 @@ export default function ResumeEditor({
               <ScrollArea className="h-40">
                 <ul className="list-disc pl-5 space-y-2 text-sm">
                   {suggestions.map((suggestion, index) => (
-                    <li key={index}>{suggestion}</li>
+                    <li 
+                      key={index} 
+                      className="animate-subtle-slide-in-fade opacity-0" // Initial opacity 0 for animation
+                      style={{ animationDelay: `${index * 75}ms` }} // Staggered animation delay
+                    >
+                      {suggestion}
+                    </li>
                   ))}
                 </ul>
               </ScrollArea>
@@ -69,7 +75,7 @@ export default function ResumeEditor({
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
             rows={25}
-            className="text-sm leading-relaxed p-4 rounded-md shadow-inner bg-secondary/30"
+            className="text-sm leading-relaxed p-4 rounded-md shadow-inner bg-secondary/30 focus-within:shadow-md" // Added focus-within shadow
             placeholder="Your resume content will appear here..."
           />
         </div>

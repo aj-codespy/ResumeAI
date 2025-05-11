@@ -1,20 +1,10 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+// Removed Geist font imports to use system fonts for Notion-like feel
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { cn } from '@/lib/utils';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: 'ResumAI - AI Powered Resume Builder',
@@ -30,9 +20,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body 
         className={cn(
-          geistSans.variable, 
-          geistMono.variable, 
-          "antialiased flex flex-col min-h-screen"
+          // Removed font variables: geistSans.variable, geistMono.variable
+          "antialiased flex flex-col min-h-screen bg-background text-foreground" // Ensure bg-background and text-foreground are applied
         )}
       >
         <Header />
