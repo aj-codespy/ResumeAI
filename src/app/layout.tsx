@@ -21,6 +21,7 @@ export default function RootLayout({
         className={cn(
           "antialiased flex flex-col min-h-screen bg-background text-foreground"
         )}
+        suppressHydrationWarning={true}
       >
         <Header />
         <main className="flex-grow container mx-auto px-4">
