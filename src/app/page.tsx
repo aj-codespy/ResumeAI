@@ -72,9 +72,9 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      <Card className="text-center bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 p-8 rounded-xl shadow-xl">
+      <Card className="text-center p-8 rounded-xl border">
         <CardHeader>
-          <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
+          <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground">
             Welcome to ResumAI
           </CardTitle>
           <CardDescription className="mt-4 text-lg text-foreground/80 max-w-2xl mx-auto">
