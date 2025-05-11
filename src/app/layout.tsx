@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-// Removed Geist font imports to use system fonts for Notion-like feel
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
@@ -8,7 +7,10 @@ import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'ResumAI - AI Powered Resume Builder',
-  description: 'Create and revamp your resume with the power of AI.',
+  description: 'Create and revamp your resume with the power of AI. Build your future, faster.',
+  icons: {
+    // icon: "/favicon.ico", // If you add a favicon later
+  },
 };
 
 export default function RootLayout({
@@ -18,14 +20,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body 
+      <body
         className={cn(
-          // Removed font variables: geistSans.variable, geistMono.variable
-          "antialiased flex flex-col min-h-screen bg-background text-foreground" // Ensure bg-background and text-foreground are applied
+          "antialiased flex flex-col min-h-screen bg-background text-foreground"
         )}
       >
         <Header />
-        <main className="flex-grow container mx-auto px-4 py-8">
+        <main className="flex-grow container mx-auto px-4">
+          {/* The py-8 from previous main is removed, pages will control their own top/bottom padding */}
           {children}
         </main>
         <Footer />
