@@ -8,17 +8,17 @@ import {
 import { 
   revampResume, 
   RevampResumeInput,
-  RevampResumeOutputSchema // For result type
+  RevampResumeOutputSchema
 } from "@/ai/flows/resume-revamping";
 import { 
   parseResume, 
   ParseResumeInput,
-  ParseResumeOutput // For result type
+  ParseResumeOutput 
 } from "@/ai/flows/resume-parser";
 import { 
   generateInterviewQuestions, 
   GenerateInterviewQuestionsInput,
-  GenerateInterviewQuestionsOutput // For result type
+  GenerateInterviewQuestionsOutput
 } from "@/ai/flows/interview-question-generator";
 import {
   atsOptimize,
@@ -31,9 +31,16 @@ import type {
   RevampResumeFormData,
   GenerateInterviewQuestionsFormData,
   ParsedResumeData,
-  AtsAnalysisDetails
+  AtsAnalysisDetails,
+  ResumeSchema // For Supabase operations
 } from "@/lib/schemas";
 import { z } from "zod";
+import { createClient } from "@/utils/supabase/server";
+import { marked } from 'marked';
+import puppeteer from 'puppeteer-core'; // Using puppeteer-core
+import chromium from '@sparticuz/chromium-min'; // Using @sparticuz/chromium-min
+import htmlToDocx from 'html-to-docx';
+
 
 export interface GenerateResumeActionResult {
   success: boolean;
@@ -54,7 +61,6 @@ export async function generateResumeAction(data: GenerateResumeFormData): Promis
       projects: projectsArray,
       certifications: certificationsArray,
       emphasisSkills: emphasisSkillsArray,
-      // linkedinProfileUrl and interviewAnswers are directly from data if present
     };
 
     const result = await generateTailoredResume(input);
@@ -97,7 +103,6 @@ export async function revampResumeAction(data: RevampResumeFormData): Promise<Re
   try {
     let parsedDataForRevamp: ParsedResumeData | undefined = data.parsedResumeData;
 
-    // If resumeDataUri and fileType are provided, parse it first
     if (data.resumeDataUri && data.fileType && !parsedDataForRevamp) {
       const parseResult = await parseResumeAction({ resumeDataUri: data.resumeDataUri, fileType: data.fileType });
       if (!parseResult.success || !parseResult.parsedData) {
@@ -114,8 +119,7 @@ export async function revampResumeAction(data: RevampResumeFormData): Promise<Re
       parsedResumeData: parsedDataForRevamp,
       targetJobDescription: data.targetJobDescription,
       interviewAnswers: data.interviewAnswers,
-      // Optionally pass careerLevel and targetJobTitle if available from form/context
-      careerLevel: parsedDataForRevamp.experience && parsedDataForRevamp.experience.length > 0 ? 'Mid-Level' : 'Beginner', // Basic inference
+      careerLevel: parsedDataForRevamp.experience && parsedDataForRevamp.experience.length > 0 ? 'Mid-Level' : 'Beginner', 
       targetJobTitle: parsedDataForRevamp.experience?.[0]?.role || undefined 
     };
 
@@ -135,7 +139,7 @@ export interface GenerateInterviewQuestionsActionResult {
 
 export async function generateInterviewQuestionsAction(data: GenerateInterviewQuestionsFormData): Promise<GenerateInterviewQuestionsActionResult> {
   try {
-    const input: GenerateInterviewQuestionsInput = { ...data, count: 15 }; // Ensure count is 15 as per requirement
+    const input: GenerateInterviewQuestionsInput = { ...data, count: 15 };
     const result = await generateInterviewQuestions(input);
     return { success: true, questions: result.questions };
   } catch (error) {
@@ -167,3 +171,247 @@ export async function atsOptimizeAction(data: { resumeText: string; jobDescripti
     return { success: false, error: error instanceof Error ? error.message : "An unknown error occurred during ATS optimization." };
   }
 }
+
+// Export Actions
+export interface ExportResumeResult {
+  success: boolean;
+  fileBuffer?: string; // Base64 encoded string
+  fileName?: string;
+  contentType?: string;
+  error?: string;
+}
+
+async function getBrowser() {
+  return puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+    ignoreHTTPSErrors: true,
+  });
+}
+
+export async function exportResumeAsPdf(markdownContent: string): Promise<ExportResumeResult> {
+  try {
+    const htmlContent = marked.parse(markdownContent);
+    // Basic styling for the PDF
+    const styledHtml = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.6; padding: 20px; }
+            h1, h2, h3 { margin-bottom: 0.5em; }
+            h1 { font-size: 24px; }
+            h2 { font-size: 20px; }
+            h3 { font-size: 16px; }
+            ul { padding-left: 20px; }
+            p { margin-bottom: 1em; }
+          </style>
+        </head>
+        <body>${htmlContent}</body>
+      </html>
+    `;
+
+    let browser;
+    try {
+      browser = await getBrowser();
+      const page = await browser.newPage();
+      await page.setContent(styledHtml, { waitUntil: 'networkidle0' });
+      const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+      return {
+        success: true,
+        fileBuffer: pdfBuffer.toString('base64'),
+        fileName: 'resume.pdf',
+        contentType: 'application/pdf',
+      };
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  } catch (error) {
+    console.error("Error exporting resume as PDF:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to export resume as PDF." };
+  }
+}
+
+export async function exportResumeAsDocx(markdownContent: string): Promise<ExportResumeResult> {
+  try {
+    const htmlContent = marked.parse(markdownContent);
+    // Basic HTML structure for DOCX conversion
+     const styledHtml = `
+      <html>
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body>${htmlContent}</body>
+      </html>
+    `;
+    const docxBuffer = await htmlToDocx(styledHtml, undefined, {
+      table: { row: { cantSplit: true } },
+      footer: false,
+      header: false,
+    });
+    
+    if (!(docxBuffer instanceof Buffer)) {
+        throw new Error("html-to-docx did not return a Buffer.");
+    }
+
+    return {
+      success: true,
+      fileBuffer: docxBuffer.toString('base64'),
+      fileName: 'resume.docx',
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    };
+  } catch (error) {
+    console.error("Error exporting resume as DOCX:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to export resume as DOCX." };
+  }
+}
+
+
+// Supabase CRUD actions for resumes
+export interface SaveResumeResult {
+  success: boolean;
+  resumeId?: string;
+  error?: string;
+}
+
+export async function saveResume(
+  resumeData: Omit<ResumeSchema, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+): Promise<SaveResumeResult> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "User not authenticated." };
+  }
+  if (user.id !== resumeData.user_id) {
+    return { success: false, error: "User ID mismatch."};
+  }
+
+  try {
+    if (resumeData.id) { // Update existing resume
+      const { data, error } = await supabase
+        .from('resumes')
+        .update({
+          resume_name: resumeData.resume_name,
+          markdown_content: resumeData.markdown_content,
+          json_data: resumeData.json_data,
+          ats_score: resumeData.ats_score,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', resumeData.id)
+        .eq('user_id', user.id)
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return { success: true, resumeId: data.id };
+    } else { // Create new resume
+      const { data, error } = await supabase
+        .from('resumes')
+        .insert({
+          user_id: user.id,
+          resume_name: resumeData.resume_name,
+          markdown_content: resumeData.markdown_content,
+          json_data: resumeData.json_data,
+          ats_score: resumeData.ats_score,
+        })
+        .select('id')
+        .single();
+      
+      if (error) throw error;
+      return { success: true, resumeId: data.id };
+    }
+  } catch (error) {
+    console.error("Error saving resume:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to save resume." };
+  }
+}
+
+export interface ListResumesResult {
+  success: boolean;
+  resumes?: ResumeSchema[];
+  error?: string;
+}
+
+export async function listUserResumes(): Promise<ListResumesResult> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "User not authenticated." };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('resumes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, resumes: data as ResumeSchema[] };
+  } catch (error) {
+    console.error("Error listing resumes:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to list resumes." };
+  }
+}
+
+export interface GetResumeResult {
+  success: boolean;
+  resume?: ResumeSchema;
+  error?: string;
+}
+export async function getResumeDetails(resumeId: string): Promise<GetResumeResult> {
+  const supabase = createClient();
+   const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "User not authenticated." };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('resumes')
+      .select('*')
+      .eq('id', resumeId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) throw error;
+    return { success: true, resume: data as ResumeSchema };
+  } catch (error) {
+    console.error("Error fetching resume details:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch resume details." };
+  }
+}
+
+export interface DeleteResumeResult {
+    success: boolean;
+    error?: string;
+}
+export async function deleteResume(resumeId: string): Promise<DeleteResumeResult> {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+        const { error } = await supabase
+            .from('resumes')
+            .delete()
+            .eq('id', resumeId)
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting resume:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Failed to delete resume." };
+    }
+}
+

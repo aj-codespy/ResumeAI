@@ -23,25 +23,24 @@ export type InterviewAnswer = z.infer<typeof InterviewAnswerSchema>;
 
 export const GenerateResumeFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  contactInfo: z.string().min(1, 'Contact information is required'), // Expects "Email, Phone, LinkedIn URL"
+  contactInfo: z.string().min(1, 'Contact information is required'), 
   targetJobTitle: z.string().min(1, 'Target job title is required'),
   yearsOfExperience: z.coerce.number().min(0, 'Years of experience must be non-negative'),
-  careerLevel: z.enum(['Beginner', 'Mid-Level', 'Executive']),
+  careerLevel: z.enum(['Beginner', 'Mid-Level', 'Executive', 'Student/Intern']), // Added Student/Intern
   education: z.array(EducationEntrySchema).min(1, "At least one education entry is required"),
   workExperience: z.array(WorkExperienceEntrySchema).min(1, "At least one work experience entry is required"),
   skills: z.string().min(1, 'Skills are required (comma-separated)'),
   projects: z.string().optional(),
   certifications: z.string().optional(),
-  jobDescription: z.string().optional(), // JD for tailoring
-  emphasisSkills: z.string().optional(), // Skills to emphasize
-  linkedinProfileUrl: z.string().url().optional().describe("Optional LinkedIn profile URL for additional context."),
+  jobDescription: z.string().optional(), 
+  emphasisSkills: z.string().optional(), 
+  linkedinProfileUrl: z.string().url().optional().or(z.literal('')).describe("Optional LinkedIn profile URL for additional context."),
   interviewAnswers: z.array(InterviewAnswerSchema).optional().describe("Answers to the intelligent questionnaire."),
 });
 
 export type GenerateResumeFormData = z.infer<typeof GenerateResumeFormSchema>;
 
 
-// Schema for the output of the resume parser flow
 export const ParsedSectionSchema = z.object({ 
   title: z.string().optional(), 
   content: z.string() 
@@ -83,7 +82,6 @@ export type ParsedResumeData = z.infer<typeof ParsedResumeDataSchema>;
 
 
 export const RevampResumeFormSchema = z.object({
-  // resumeText: z.string().min(50, 'Resume text must be at least 50 characters'), // To be replaced by parsed data
   resumeFile: z.any().optional().describe("The uploaded resume file (PDF, DOCX, TXT). Handled by client for data URI conversion."),
   resumeDataUri: z.string().optional().describe("Data URI of the resume file if already processed."),
   fileType: z.enum(['pdf', 'docx', 'txt']).optional().describe("Type of the uploaded file."),
@@ -94,17 +92,16 @@ export const RevampResumeFormSchema = z.object({
 export type RevampResumeFormData = z.infer<typeof RevampResumeFormSchema>;
 
 
-// Schema for Interview Question Generator
 export const GenerateInterviewQuestionsFormSchema = z.object({
   domain: z.string().optional().describe("User's industry or domain."),
-  experienceLevel: z.string().optional().describe("User's career level (e.g., Beginner, Mid-Level, Executive)."),
+  experienceLevel: z.enum(['Beginner', 'Mid-Level', 'Executive', 'Student/Intern']).optional().describe("User's career level."),
   targetRole: z.string().optional().describe("The job role the user is applying for."),
-  existingResumeSummary: z.string().optional().describe("Summary from an existing resume, if available.")
+  existingResumeSummary: z.string().optional().describe("Summary from an existing resume, if available."),
+  userName: z.string().optional().describe("User's name for personalization.")
 });
 export type GenerateInterviewQuestionsFormData = z.infer<typeof GenerateInterviewQuestionsFormSchema>;
 
 
-// Schema for ATS Optimization - Input already exists, Output needs update
 export const AtsKeywordAnalysisSchema = z.object({
   foundKeywords: z.array(z.string()).describe('Keywords from job description found in resume.'),
   missingKeywords: z.array(z.string()).describe('Important keywords from job description missing in resume.'),
@@ -119,3 +116,16 @@ export const AtsAnalysisDetailsSchema = z.object({
   generalSuggestions: z.array(z.string()).describe('Other suggestions for improvement.')
 });
 export type AtsAnalysisDetails = z.infer<typeof AtsAnalysisDetailsSchema>;
+
+// Schema for Resumes table in Supabase
+export const ResumeSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  resume_name: z.string(),
+  markdown_content: z.string(),
+  json_data: ParsedResumeDataSchema.nullable().optional(), // Storing the parsed structured data
+  ats_score: z.number().int().nullable().optional(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+export type ResumeSchema = z.infer<typeof ResumeSchema>;

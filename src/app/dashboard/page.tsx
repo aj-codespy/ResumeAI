@@ -24,12 +24,13 @@ import {
 } from '@/app/actions/resumeActions';
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Wand2, FileEdit, Sparkles, HelpCircle, CheckSquare, BotMessageSquare } from 'lucide-react';
+import { Wand2, FileEdit, Sparkles, HelpCircle, CheckSquare, BotMessageSquare, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { createClient } from '@/utils/supabase/client'; // For client-side user fetching
 
 
 type ResumeResult = {
@@ -39,6 +40,7 @@ type ResumeResult = {
   description: string;
   atsMatchScore?: number;
   atsAnalysis?: AtsAnalysisDetails;
+  resumeId?: string | null; // ID of the currently loaded/edited resume
 } | null;
 
 export default function DashboardPage() {
@@ -49,9 +51,38 @@ export default function DashboardPage() {
   const [isInterviewModalOpen, setInterviewModalOpen] = useState(false);
   const [interviewQuestions, setInterviewQuestions] = useState<string[]>([]);
   const [currentAnswers, setCurrentAnswers] = useState<InterviewAnswer[]>([]);
-  const [interviewContext, setInterviewContext] = useState<any>(null); // To store form data or parsed resume for continuing after interview
+  const [interviewContext, setInterviewContext] = useState<any>(null); 
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
+  const [currentResumeName, setCurrentResumeName] = useState<string>("New Resume");
+
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    const supabase = createClient();
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleLoadResumeInEditor = (markdownContent: string, resumeId: string, resumeName: string) => {
+    setResumeResult(prev => ({
+      ...(prev || { title: "", description: "", content: "" }), // Ensure prev is not null
+      content: markdownContent,
+      title: resumeName,
+      description: `Editing saved resume: ${resumeName}`,
+      resumeId: resumeId,
+      // Preserve other fields like suggestions, atsMatchScore if they exist from a previous operation on this content
+    }));
+    setCurrentResumeId(resumeId);
+    setCurrentResumeName(resumeName);
+  };
 
   const handleInterviewQuestionGeneration = async (contextData: GenerateInterviewQuestionsFormData, nextAction: 'generate' | 'revamp', originalData: any) => {
     setIsLoading(true);
@@ -65,7 +96,6 @@ export default function DashboardPage() {
         setInterviewModalOpen(true);
       } else {
         toast({ variant: "destructive", title: "Question Generation Error", description: result.error || "Failed to generate interview questions." });
-        // Proceed without interview if questions fail? Or halt? For now, halt.
       }
     } catch (error) {
       toast({ variant: "destructive", title: "Unexpected Error", description: "An error occurred generating questions." });
@@ -92,11 +122,10 @@ export default function DashboardPage() {
 
   const handleGenerateSubmit = async (data: GenerateResumeFormData, skipInterview?: boolean) => {
     if (!skipInterview && (!data.interviewAnswers || data.interviewAnswers.length === 0)) {
-      // Trigger interview question generation
       const interviewContextData: GenerateInterviewQuestionsFormData = {
         targetRole: data.targetJobTitle,
         experienceLevel: data.careerLevel,
-        userName: data.name.split(' ')[0], // First name
+        userName: data.name.split(' ')[0], 
       };
       await handleInterviewQuestionGeneration(interviewContextData, 'generate', data);
       return;
@@ -105,13 +134,16 @@ export default function DashboardPage() {
     setIsLoading(true);
     setLoadingMessage("Crafting your new resume with AI...");
     setResumeResult(null);
+    setCurrentResumeId(null); // New resume, so no ID yet
+    setCurrentResumeName(data.targetJobTitle ? `Resume for ${data.targetJobTitle}` : "New AI Resume");
     try {
       const result = await generateResumeAction(data);
       if (result.success && result.resumeMarkdown) {
         setResumeResult({
           content: result.resumeMarkdown,
-          title: "Your AI-Generated Resume",
-          description: "Your new resume has been crafted by AI. Review and refine it below."
+          title: data.targetJobTitle ? `Resume for ${data.targetJobTitle}` : "Your AI-Generated Resume",
+          description: "Your new resume has been crafted by AI. Review, refine, and save it below.",
+          resumeId: null // Explicitly null for new
         });
         toast({ title: "Resume Generated!", description: "Your AI-powered resume is ready." });
       } else {
@@ -130,29 +162,29 @@ export default function DashboardPage() {
       return;
     }
     
-    if (!skipInterview && (!data.interviewAnswers || data.interviewAnswers.length === 0)) {
-      // Prepare context for interview questions
-      // If resumeDataUri is present, we might need to parse it first to get summary for interview context
-      let summaryForInterview = "";
-      if (data.resumeDataUri && data.fileType) {
+    let summaryForInterview = "";
+    let parsedDataForRevamp = data.parsedResumeData;
+
+    if (data.resumeDataUri && data.fileType && !parsedDataForRevamp) {
         setIsLoading(true);
         setLoadingMessage("Parsing your resume for context...");
         const parseResult = await parseResumeAction({ resumeDataUri: data.resumeDataUri, fileType: data.fileType });
         setIsLoading(false);
         if (parseResult.success && parseResult.parsedData) {
-          summaryForInterview = parseResult.parsedData.summary || parseResult.parsedData.rawText.substring(0, 500);
-          // Store parsed data to avoid re-parsing
-          data.parsedResumeData = parseResult.parsedData; 
+          summaryForInterview = parseResult.parsedData.summary || parseResult.parsedData.rawText?.substring(0, 500) || "";
+          parsedDataForRevamp = parseResult.parsedData;
+          data.parsedResumeData = parseResult.parsedData; // Ensure data object is updated
         } else {
            toast({ variant: "destructive", title: "Parsing Error", description: "Could not parse resume for interview context. Proceeding without it." });
         }
-      } else if (data.parsedResumeData) {
-         summaryForInterview = data.parsedResumeData.summary || data.parsedResumeData.rawText.substring(0,500);
-      }
-
+    } else if (parsedDataForRevamp) {
+         summaryForInterview = parsedDataForRevamp.summary || parsedDataForRevamp.rawText?.substring(0,500) || "";
+    }
+    
+    if (!skipInterview && (!data.interviewAnswers || data.interviewAnswers.length === 0)) {
       const interviewContextData: GenerateInterviewQuestionsFormData = {
-        targetRole: data.targetJobDescription ? "Role from Job Description" : (data.parsedResumeData?.experience?.[0]?.role || "General Professional"),
-        experienceLevel: data.parsedResumeData ? (data.parsedResumeData.experience && data.parsedResumeData.experience.length > 3 ? 'Mid-Level' : 'Beginner') : undefined,
+        targetRole: data.targetJobDescription ? "Role from Job Description" : (parsedDataForRevamp?.experience?.[0]?.role || "General Professional"),
+        experienceLevel: parsedDataForRevamp ? (parsedDataForRevamp.experience && parsedDataForRevamp.experience.length > 3 ? 'Mid-Level' : 'Beginner') : undefined,
         existingResumeSummary: summaryForInterview,
       };
       await handleInterviewQuestionGeneration(interviewContextData, 'revamp', data);
@@ -162,14 +194,18 @@ export default function DashboardPage() {
     setIsLoading(true);
     setLoadingMessage("Revamping your resume with AI magic...");
     setResumeResult(null);
+    setCurrentResumeId(null); // Revamped is like new until saved
+    setCurrentResumeName(parsedDataForRevamp?.name ? `Revamped: ${parsedDataForRevamp.name}` : "Revamped Resume");
+
     try {
-      const result = await revampResumeAction(data); // revampResumeAction handles internal parsing now
+      const result = await revampResumeAction(data);
       if (result.success && result.revampedResumeMarkdown) {
         setResumeResult({
           content: result.revampedResumeMarkdown,
           suggestions: result.suggestions,
-          title: "Your AI-Revamped Resume",
-          description: "Your resume has been intelligently revamped. Check out the improvements and suggestions."
+          title: parsedDataForRevamp?.name ? `Revamped: ${parsedDataForRevamp.name}` : "Your AI-Revamped Resume",
+          description: "Your resume has been intelligently revamped. Check out the improvements and suggestions.",
+          resumeId: null // Explicitly null for revamped until saved
         });
         toast({ title: "Resume Revamped!", description: "Your resume has been enhanced by AI." });
       } else {
@@ -187,9 +223,9 @@ export default function DashboardPage() {
       toast({ variant: "destructive", title: "No Resume Content", description: "Please generate or revamp a resume first." });
       return;
     }
-    const jobDescription = prompt("Enter the Job Description to optimize against:"); // Simple prompt, ideally a textarea
+    const jobDescription = prompt("Enter the Job Description to optimize against:"); 
     if (!jobDescription) {
-      toast({ variant: "destructive", title: "No Job Description", description: "Job description is required for ATS optimization." });
+      toast({ variant: "info", title: "ATS Optimization Canceled", description: "Job description is required for ATS optimization." });
       return;
     }
 
@@ -199,9 +235,10 @@ export default function DashboardPage() {
       const result = await atsOptimizeAction({ resumeText: resumeResult.content, jobDescription });
       if (result.success && result.optimizedResumeMarkdown) {
         setResumeResult({
+          ...resumeResult, // Preserve existing ID if optimizing a saved resume
           content: result.optimizedResumeMarkdown,
-          suggestions: result.analysis?.generalSuggestions, // Or combine all suggestions
-          title: "ATS Optimized Resume",
+          suggestions: result.analysis?.generalSuggestions, 
+          title: `ATS Optimized: ${resumeResult.title || "Resume"}`,
           description: `Optimized for the provided job description. ATS Match Score: ${result.atsMatchScore}%`,
           atsMatchScore: result.atsMatchScore,
           atsAnalysis: result.analysis
@@ -268,12 +305,13 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                First, generate or revamp a resume using the other tabs. Then, click the button below and provide the job description.
+                First, generate or revamp a resume using the other tabs. The content in the editor below will be used. Then, click the button and provide the job description.
               </p>
               { !resumeResult?.content && <p className="text-destructive text-sm">Please generate or revamp a resume first using the other tabs.</p>}
             </CardContent>
             <CardFooter>
               <Button onClick={handleAtsOptimize} disabled={isLoading || !resumeResult?.content} className="w-full md:w-auto">
+                {isLoading && loadingMessage.includes("Optimizing") ? <LoadingSpinner className="mr-2"/> : null}
                 {isLoading && loadingMessage.includes("Optimizing") ? "Optimizing..." : "Optimize Current Resume for ATS"}
               </Button>
             </CardFooter>
@@ -294,10 +332,13 @@ export default function DashboardPage() {
         <ResumeEditor
           content={resumeResult.content}
           suggestions={resumeResult.suggestions}
-          title={resumeResult.title}
+          title={resumeResult.title || currentResumeName}
           description={resumeResult.description}
           atsMatchScore={resumeResult.atsMatchScore}
           atsAnalysis={resumeResult.atsAnalysis}
+          currentUserId={currentUserId || undefined}
+          currentResumeId={resumeResult.resumeId || currentResumeId}
+          onLoadResume={handleLoadResumeInEditor}
         />
       )}
 
@@ -309,7 +350,7 @@ export default function DashboardPage() {
               Answer these questions to help us tailor your resume even further. Your insights are valuable!
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Added padding for scrollbar */}
+          <ScrollArea className="flex-grow pr-6 -mr-6"> 
             <div className="space-y-4 py-4">
               {interviewQuestions.map((question, index) => (
                 <div key={index} className="space-y-2">
@@ -328,11 +369,10 @@ export default function DashboardPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setInterviewModalOpen(false);
-              // Decide if we should proceed with original data if interview is skipped
               if (interviewContext.nextAction === 'generate') {
-                handleGenerateSubmit(interviewContext.originalData, true); // true to skip interview next time
+                handleGenerateSubmit(interviewContext.originalData, true); 
               } else if (interviewContext.nextAction === 'revamp') {
-                handleRevampSubmit(interviewContext.originalData, true); // true to skip interview next time
+                handleRevampSubmit(interviewContext.originalData, true); 
               }
             }}>Skip for now</Button>
             <Button onClick={handleInterviewSubmit}>Submit Answers & Proceed</Button>

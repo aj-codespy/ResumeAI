@@ -4,14 +4,14 @@ import { cookies } from 'next/headers'
 export function createClient() {
   const cookieStore = cookies()
 
-  const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
-    throw new Error('SERVER: Missing or invalid SUPABASE_URL environment variable. It must start with http:// or https:// and be available server-side.')
+    throw new Error('SERVER: Missing or invalid NEXT_PUBLIC_SUPABASE_URL environment variable. It must start with http:// or https:// and be available server-side.')
   }
   if (!supabaseAnonKey) {
-    throw new Error('SERVER: Missing SUPABASE_ANON_KEY environment variable. It must be available server-side.')
+    throw new Error('SERVER: Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable. It must be available server-side.')
   }
 
   return createServerClient(
@@ -44,4 +44,3 @@ export function createClient() {
     }
   )
 }
-

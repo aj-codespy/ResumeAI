@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // Required for puppeteer-core and @sparticuz/chromium-min to work in Vercel Serverless Functions
+    // and potentially in Next.js server actions/route handlers depending on the environment.
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
+  },
 };
 
 export default nextConfig;
