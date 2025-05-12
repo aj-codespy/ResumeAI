@@ -15,7 +15,7 @@ export default async function Header() {
           href="/"
           className="flex items-center gap-2 text-2xl font-bold text-primary transition-opacity duration-150 ease-out hover:opacity-75 active:opacity-60"
         >
-          <Briefcase className="h-8 w-8" />
+          <Briefcase className="h-7 w-7" />
           <span>ResumAI</span>
         </Link>
         <nav className="flex items-center gap-4">

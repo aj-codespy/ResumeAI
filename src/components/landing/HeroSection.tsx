@@ -42,7 +42,7 @@ export default function HeroSection({ isLoggedIn }: HeroSectionProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
           <div className="absolute bottom-6 left-6 right-6 text-left">
             <h3 className="text-xl md:text-2xl font-semibold text-primary-foreground flex items-center">
-              <Wand2 className="mr-2 h-6 w-6 text-accent" />
+              <Wand2 className="mr-2 h-5 w-5 text-accent" />
               Intelligent Resume Crafting
             </h3>
             <p className="text-sm md:text-base text-primary-foreground/80 mt-1">

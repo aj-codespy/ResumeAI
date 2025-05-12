@@ -9,7 +9,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200 ease-out hover:border-foreground/20", // Notion-like subtle border change on hover
+      "rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-200 ease-out hover:border-foreground/20 hover:shadow-md", // Notion-like subtle border change on hover + added shadow
       className
     )}
     {...props}
