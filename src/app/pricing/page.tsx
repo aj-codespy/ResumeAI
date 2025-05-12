@@ -21,7 +21,7 @@ const pricingTiers = [
   },
   {
     name: 'Pro',
-    price: '$7',
+    price: '$12',
     frequency: '/month',
     description: 'The job seeker’s choice for a competitive edge and more interviews.',
     features: [
@@ -39,7 +39,7 @@ const pricingTiers = [
   },
   {
     name: 'Executive',
-    price: '$19',
+    price: '$49',
     frequency: '/month',
     description: 'For serious professionals demanding the best tools and unlimited access.',
     features: [
