@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Briefcase, LogIn } from 'lucide-react';
+import { Briefcase, LogIn, Settings2 } from 'lucide-react'; // Changed icon for ResumAI
 import { createClient } from '@/utils/supabase/server';
 import UserNav from '@/components/auth/UserNav';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,12 @@ export default async function Header() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link
           href="/"
-          className="flex items-center gap-2 text-2xl font-bold text-primary transition-opacity duration-150 ease-out hover:opacity-75 active:opacity-60"
+          className="flex items-center gap-2 text-2xl font-bold text-primary transition-opacity duration-150 ease-out hover:opacity-80 active:opacity-70"
         >
-          <Briefcase className="h-7 w-7" />
+          <Settings2 className="h-7 w-7" /> {/* Changed Icon */}
           <span>ResumAI</span>
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" asChild>
             <Link href="/pricing">Pricing</Link>
           </Button>
@@ -27,7 +27,7 @@ export default async function Header() {
           ) : (
             <Button asChild>
               <Link href="/login">
-                <LogIn className="mr-2 h-4 w-4" /> Login
+                <LogIn className="mr-2 h-4 w-4" /> Login / Sign Up
               </Link>
             </Button>
           )}
@@ -36,3 +36,4 @@ export default async function Header() {
     </header>
   );
 }
+

@@ -1,20 +1,20 @@
 import PricingTierCard from '@/components/pricing/PricingTierCard';
-import { CheckCircle, Sparkles, Briefcase } from 'lucide-react';
+import { CheckCircle, Sparkles, Briefcase, Award } from 'lucide-react'; // Added Award icon
 
 const pricingTiers = [
   {
-    name: 'Free',
+    name: 'Starter',
     price: '$0',
-    frequency: '/month',
-    description: 'Get started with basic AI resume tools.',
+    frequency: '/always free',
+    description: 'Kickstart your journey with essential AI resume tools.',
     features: [
-      '1 AI Resume Generation',
-      'Basic Resume Templates',
-      'Limited AI Suggestions',
-      'Community Support',
+      '1 AI-Generated Resume Draft',
+      'Access to Basic Resume Templates',
+      'Key AI-Powered Writing Suggestions',
+      'Community Support Access',
     ],
     buttonText: 'Start for Free',
-    buttonLink: '/login?plan=free', // Or /dashboard if already implies free tier
+    buttonLink: '/login?plan=starter', 
     icon: <Sparkles className="h-6 w-6" />,
     popular: false,
     animationDelay: '0ms',
@@ -23,34 +23,34 @@ const pricingTiers = [
     name: 'Pro',
     price: '$7',
     frequency: '/month',
-    description: 'Unlock powerful AI features for job seekers.',
+    description: 'The job seeker’s choice for a competitive edge and more interviews.',
     features: [
-      '10 AI Resume Generations/month',
-      'All Premium Templates',
-      'Advanced AI Revamp & Suggestions',
-      'ATS Optimization Tools',
+      'Up to 10 AI Resume Generations/month',
+      'Full Access to All Premium Templates',
+      'Advanced AI Revamp & In-depth Suggestions',
+      'Comprehensive ATS Optimization Tools',
       'Priority Email Support',
     ],
-    buttonText: 'Get Started with Pro',
-    buttonLink: '/login?plan=pro', // Link to checkout/subscription
-    icon: <CheckCircle className="h-6 w-6" />,
+    buttonText: 'Go Pro & Get Hired',
+    buttonLink: '/login?plan=pro', 
+    icon: <Award className="h-6 w-6" />, // Changed Icon
     popular: true,
     animationDelay: '100ms',
   },
   {
-    name: 'Business',
+    name: 'Executive',
     price: '$19',
     frequency: '/month',
-    description: 'For professionals and frequent users.',
+    description: 'For serious professionals demanding the best tools and unlimited access.',
     features: [
       'Unlimited AI Resume Generations',
-      'All Premium Templates & Customization',
-      'Deep AI Analysis & Feedback',
-      'Cover Letter Generation (Coming Soon)',
+      'Unlimited Access to All Templates & Customizations',
+      'Deep-Dive AI Analysis & Personalized Feedback',
+      'AI Cover Letter Generation (Beta)',
       'Dedicated Support Manager',
     ],
-    buttonText: 'Choose Business',
-    buttonLink: '/login?plan=business', // Link to checkout/subscription
+    buttonText: 'Choose Executive',
+    buttonLink: '/login?plan=executive', 
     icon: <Briefcase className="h-6 w-6" />,
     popular: false,
     animationDelay: '200ms',
@@ -63,10 +63,10 @@ export default function PricingPage() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12 md:mb-16 animate-subtle-slide-in-fade">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground mb-4">
-            Find the Perfect Plan
+            Find Your Edge: ResumAI Pricing Plans
           </h1>
           <p className="text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto">
-            Choose the ResumAI plan that best fits your career goals and unlock powerful AI tools.
+            Choose the perfect plan to supercharge your job applications. Start free, or unlock advanced AI power to land your dream job faster.
           </p>
         </div>
 
@@ -89,10 +89,11 @@ export default function PricingPage() {
         </div>
         
         <div className="mt-16 text-center text-sm text-foreground/60 animate-subtle-slide-in-fade" style={{animationDelay: '300ms'}}>
-          <p>All plans come with a satisfaction guarantee. Cancel anytime.</p>
-          <p>Need a custom solution for your team? <a href="mailto:support@resumai.app" className="text-primary hover:underline">Contact us</a>.</p>
+          <p>All paid plans come with a 7-day money-back guarantee. Cancel anytime.</p>
+          <p>Need a custom solution for your team or educational institution? <a href="mailto:sales@resumai.app" className="text-primary hover:underline">Contact Sales</a>.</p>
         </div>
       </div>
     </div>
   );
 }
+
