@@ -1,8 +1,9 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
-import type { GenerateResumeFormData, EducationEntry, WorkExperienceEntry } from "@/lib/schemas";
+import { useForm, useFieldArray } from "react-hook-form";
+import type { GenerateResumeFormData, EducationEntry, WorkExperienceEntry, InterviewAnswer } from "@/lib/schemas";
 import { GenerateResumeFormSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,33 +24,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Linkedin } from "lucide-react"; // Added Linkedin Icon
 import { Separator } from "@/components/ui/separator";
 
 interface ResumeGeneratorFormProps {
   onSubmit: (data: GenerateResumeFormData) => Promise<void>;
   isSubmitting: boolean;
+  initialData?: Partial<GenerateResumeFormData>; // For pre-filling if coming back from interview
 }
 
 const defaultEducationEntry: EducationEntry = { institution: "", degree: "", graduationDate: "" };
 const defaultWorkExperienceEntry: WorkExperienceEntry = { company: "", role: "", dates: "", responsibilities: "" };
 
-export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGeneratorFormProps) {
+export default function ResumeGeneratorForm({ onSubmit, isSubmitting, initialData }: ResumeGeneratorFormProps) {
   const form = useForm<GenerateResumeFormData>({
     resolver: zodResolver(GenerateResumeFormSchema),
     defaultValues: {
-      name: "",
-      contactInfo: "",
-      targetJobTitle: "",
-      yearsOfExperience: 0,
-      careerLevel: "Mid-Level",
-      education: [defaultEducationEntry],
-      workExperience: [defaultWorkExperienceEntry],
-      skills: "",
-      projects: "",
-      certifications: "",
-      jobDescription: "",
-      emphasisSkills: "",
+      name: initialData?.name || "",
+      contactInfo: initialData?.contactInfo || "",
+      targetJobTitle: initialData?.targetJobTitle || "",
+      yearsOfExperience: initialData?.yearsOfExperience || 0,
+      careerLevel: initialData?.careerLevel || "Mid-Level",
+      education: initialData?.education || [defaultEducationEntry],
+      workExperience: initialData?.workExperience || [defaultWorkExperienceEntry],
+      skills: initialData?.skills || "",
+      projects: initialData?.projects || "",
+      certifications: initialData?.certifications || "",
+      jobDescription: initialData?.jobDescription || "",
+      emphasisSkills: initialData?.emphasisSkills || "",
+      linkedinProfileUrl: initialData?.linkedinProfileUrl || "",
+      interviewAnswers: initialData?.interviewAnswers || [], // Pass through interview answers
     },
   });
 
@@ -63,9 +67,18 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
     name: "workExperience",
   });
 
+  const handleSubmitWithInterviewData = (data: GenerateResumeFormData) => {
+    const dataToSubmit = {
+      ...data,
+      interviewAnswers: form.getValues("interviewAnswers") // Ensure latest interview answers are included
+    };
+    onSubmit(dataToSubmit);
+  };
+
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmitWithInterviewData)} className="space-y-8">
         <Card>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
@@ -107,12 +120,27 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                 <FormItem>
                   <FormLabel>Contact Information</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Email, Phone, LinkedIn URL" {...field} />
+                    <Textarea placeholder="Email, Phone, Main LinkedIn URL" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="linkedinProfileUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center">
+                      <Linkedin className="h-4 w-4 mr-2 text-blue-600" /> LinkedIn Profile URL (Optional)
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <FormField
                 control={form.control}
@@ -141,6 +169,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Beginner">Beginner</SelectItem>
+                        <SelectItem value="Student/Intern">Student/Intern</SelectItem>
                         <SelectItem value="Mid-Level">Mid-Level</SelectItem>
                         <SelectItem value="Executive">Executive</SelectItem>
                       </SelectContent>
@@ -210,7 +239,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
         <Card>
           <CardHeader>
             <CardTitle>Work Experience</CardTitle>
-            <CardDescription>Showcase your professional journey.</CardDescription>
+            <CardDescription>Showcase your professional journey. Describe responsibilities and highlight achievements.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {workExperienceFields.map((item, index) => (
@@ -254,7 +283,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Responsibilities & Achievements</FormLabel>
-                      <FormControl><Textarea placeholder="Describe your key tasks and accomplishments." {...field} /></FormControl>
+                      <FormControl><Textarea rows={4} placeholder="Describe your key tasks and accomplishments. Use bullet points, quantify results (e.g., Increased X by Y%)." {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -275,6 +304,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
         <Card>
           <CardHeader>
             <CardTitle>Skills & More</CardTitle>
+            <CardDescription>List your skills and any other relevant information.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -284,7 +314,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                 <FormItem>
                   <FormLabel>Skills</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Comma-separated skills, e.g., JavaScript, React, Node.js" {...field} />
+                    <Textarea placeholder="Comma-separated skills, e.g., JavaScript, React, Node.js, Project Management, Agile" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -297,7 +327,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                 <FormItem>
                   <FormLabel>Skills to Emphasize (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Comma-separated skills you want to highlight" {...field} />
+                    <Textarea placeholder="Comma-separated skills you want AI to highlight" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -310,7 +340,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                 <FormItem>
                   <FormLabel>Projects (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Comma-separated project descriptions or links" {...field} />
+                    <Textarea placeholder="Describe key projects, comma-separated or one per line. e.g., Developed X which achieved Y." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -323,7 +353,7 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
                 <FormItem>
                   <FormLabel>Certifications (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Comma-separated certifications" {...field} />
+                    <Textarea placeholder="Comma-separated certifications, e.g., PMP, AWS Certified Developer" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -334,19 +364,22 @@ export default function ResumeGeneratorForm({ onSubmit, isSubmitting }: ResumeGe
               name="jobDescription"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Target Job Description (Optional)</FormLabel>
+                  <FormLabel>Target Job Description (Highly Recommended for Tailoring)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Paste the job description here to tailor your resume" {...field} rows={5}/>
+                    <Textarea placeholder="Paste the full job description here to tailor your resume effectively." {...field} rows={6}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col items-start gap-y-4">
             <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
-              {isSubmitting ? "Generating..." : "Generate Resume"}
+              {isSubmitting ? "Processing..." : "Proceed to AI Interview & Generate"}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              Clicking "Proceed" will first take you through a short AI-powered interview to gather more details for a highly personalized resume.
+            </p>
           </CardFooter>
         </Card>
       </form>
